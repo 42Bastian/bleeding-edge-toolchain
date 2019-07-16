@@ -5,6 +5,10 @@ All-in-one script to build bleeding-edge-toolchain for ARM microcontrollers.
 
 [bleeding-edge-toolchain - what it's all about?](http://www.freddiechopin.info/en/articles/35-arm/87-bleeding-edge-toolchain-o-co-chodzi)
 
+__This fork includes a big endian patch.__
+
+
+
 Toolchain for Linux
 -------------------
 
