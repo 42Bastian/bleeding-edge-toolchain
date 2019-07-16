@@ -14,3 +14,6 @@ arm-none-eabi-gcc-*-*
 arm-none-eabi-gcc-*-*.tar.xz
 arm-none-eabi-gcc-*-*-win32.7z
 arm-none-eabi-gcc-*-*-win64.7z
+aarch64-elf-gcc*
+#
+*~
