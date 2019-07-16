@@ -2,6 +2,7 @@ Change Log
 ==========
 
 All notable changes to this project will be documented in this file.
+
 [SC190716](https://github.com/42Bastian/bleeding-edge-toolchain/compare/190503...SC190716) - 2019-07-16
 
 ### Changed
