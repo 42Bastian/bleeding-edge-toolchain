@@ -27,9 +27,9 @@ zlibVersion="1.2.11"
 
 top="$(pwd)"
 buildNative="buildNative"
-buildWin64="buildWin64"
+buildWin32="buildWin32"
 installNative="installNative"
-installWin64="installWin64"
+installWin32="installWin32"
 prerequisites="prerequisites"
 sources="sources"
 
@@ -53,8 +53,8 @@ mpfr="mpfr-${mpfrVersion}"
 mpfrArchive="${mpfr}.tar.xz"
 newlib="newlib-${newlibVersion}"
 newlibArchive="${newlib}.tar.gz"
-pythonWin64="python-${pythonVersion}.amd64"
-pythonArchiveWin64="${pythonWin64}.msi"
+pythonWin32="python-${pythonVersion}"
+pythonArchiveWin32="${pythonWin32}.msi"
 zlib="zlib-${zlibVersion}"
 zlibArchive="${zlib}.tar.gz"
 
@@ -62,20 +62,20 @@ pkgversion="SCIOPTA toolchain"
 target="aarch64-elf"
 package="${target}-${gcc}-$(date +'%y%m%d')"
 packageArchiveNative="${package}.tar.xz"
-packageArchiveWin64="${package}-win64.7z"
+packageArchiveWin32="${package}-win32.7z"
 
 bold="$(tput bold)"
 normal="$(tput sgr0)"
 
-enableWin64="n"
+enableWin32="n"
 keepBuildFolders="n"
 buildDocumentation="y"
 skipGdb="y"
 silent="-s"
 while [ ${#} -gt 0 ]; do
 	case ${1} in
-		--enable-win64)
-			enableWin64="y"
+		--enable-win32)
+			enableWin32="y"
 			;;
 		--keep-build-folders)
 			keepBuildFolders="y"
@@ -91,7 +91,7 @@ while [ ${#} -gt 0 ]; do
 		    silent=
 		    ;;
 		*)
-			echo "Usage: $0 [--enable-win64] [--keep-build-folders] [--skip-documentation] [--enable-gdb] [--verbose]" >&2
+			echo "Usage: $0 [--enable-win32] [--keep-build-folders] [--skip-documentation] [--enable-gdb] [--verbose]" >&2
 			exit 1
 	esac
 	shift
@@ -344,21 +344,21 @@ buildGcc() {
 		--disable-nls \
 		--disable-shared \
 		--disable-threads \
+		--disable-tls \
+		--with-gnu-as \
+		--with-gnu-ld \
+		--with-newlib \
 		--enable-c99 \
 		--enable-lto \
 		--enable-multilib \
-		--disable-tls --disable-multiarch --enable-long-long --with-ppl=no --with-isl=no \
+		 --disable-multiarch --enable-long-long --with-ppl=no --with-isl=no \
                 --with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419 \
-		--with-newlib \
-		--with-gnu-as \
-		--with-gnu-ld \
 		--with-sysroot=${top}/${installFolder}/${target} \
 		--with-system-zlib \
 		--with-gmp=${top}/${buildFolder}/${prerequisites}/${gmp} \
 		--with-mpfr=${top}/${buildFolder}/${prerequisites}/${mpfr} \
 		--with-mpc=${top}/${buildFolder}/${prerequisites}/${mpc} \
 		\"--with-pkgversion=${pkgversion}\" "
-
 	echo "${bold}---------- ${bannerPrefix}${gcc} make all-gcc${normal}"
 	make ${silent} -j$(nproc) all-gcc
 	echo "${bold}---------- ${bannerPrefix}${gcc} make install-gcc${normal}"
@@ -436,7 +436,6 @@ buildGccFinal() {
 	echo "${bold}---------- ${gcc}${suffix} configure${normal}"
 	${top}/${sources}/${gcc}/configure \
 	      --target=${target} \
-	      --build=${hostTriplet} --host=${hostTriplet} \
 	      --prefix=${top}/${installFolder} \
 	      --docdir=${top}/${installFolder}/share/doc \
 	      --libexecdir=${top}/${installFolder}/lib \
@@ -460,7 +459,7 @@ buildGccFinal() {
 		--enable-c99 \
 		--enable-lto \
 		--enable-multilib \
-		--disable-tls --disable-multiarch --enable-long-long --with-ppl=no --with-isl=no \
+		--disable-multiarch --enable-long-long --with-ppl=no --with-isl=no \
                 --with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419 \
 		--with-headers=yes \
 		--with-sysroot=${top}/${installFolder}/${target} \
@@ -468,7 +467,6 @@ buildGccFinal() {
 		--with-gmp=${top}/${buildNative}/${prerequisites}/${gmp} \
 		--with-mpfr=${top}/${buildNative}/${prerequisites}/${mpfr} \
 		--with-mpc=${top}/${buildNative}/${prerequisites}/${mpc} \
-		--with-isl=no\
 		"--with-pkgversion=${pkgversion}"
 	echo "${bold}---------- ${gcc}${suffix} make${normal}"
 	make ${silent} -j$(nproc) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
@@ -567,11 +565,11 @@ if [ 1 = 1 ]; then
     rm -rf ${installNative}
     mkdir -p ${buildNative}
     mkdir -p ${installNative}
-    rm -rf ${buildWin64}
-    rm -rf ${installWin64}
-    if [ "${enableWin64}" = "y" ]; then
-	mkdir -p ${buildWin64}
-	mkdir -p ${installWin64}
+    rm -rf ${buildWin32}
+    rm -rf ${installWin32}
+    if [ "${enableWin32}" = "y" ]; then
+	mkdir -p ${buildWin32}
+	mkdir -p ${installWin32}
     fi
     mkdir -p ${sources}
     find ${sources} -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
@@ -586,7 +584,7 @@ if [ 1 = 1 ]; then
 	     ! -name "${mpcArchive}" \
 	     ! -name "${mpfrArchive}" \
 	     ! -name "${newlibArchive}" \
-	     ! -name "${pythonArchiveWin64}" \
+	     ! -name "${pythonArchiveWin32}" \
 	     ! -name "${zlibArchive}" \
 	     -exec rm -rf {} +
     else
@@ -598,7 +596,7 @@ if [ 1 = 1 ]; then
 	     ! -name "${mpcArchive}" \
 	     ! -name "${mpfrArchive}" \
 	     ! -name "${newlibArchive}" \
-	     ! -name "${pythonArchiveWin64}" \
+	     ! -name "${pythonArchiveWin32}" \
 	     ! -name "${zlibArchive}" \
 	     -exec rm -rf {} +
     fi    
@@ -629,15 +627,15 @@ if [ 1 = 1 ]; then
     fi
     download ${gmpArchive} http://ftp.gnu.org/gnu/gmp/${gmpArchive}
     download ${islArchive} http://isl.gforge.inria.fr/${islArchive}
-    if [ "${enableWin64}" = "y" ]; then
+    if [ "${enableWin32}" = "y" ]; then
 	download ${libiconvArchive} http://ftp.gnu.org/pub/gnu/libiconv/${libiconvArchive}
     fi
     download ${mpcArchive} http://ftp.gnu.org/gnu/mpc/${mpcArchive}
     download ${mpfrArchive} http://ftp.gnu.org/gnu/mpfr/${mpfrArchive}
     download ${newlibArchive} http://sourceware.org/pub/newlib/${newlibArchive}
-    if [ "${enableWin64}" = "y" ]; then
+    if [ "${enableWin32}" = "y" ]; then
 	download ${libiconvArchive} http://ftp.gnu.org/pub/gnu/libiconv/${libiconvArchive}
-	download ${pythonArchiveWin64} https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin64}
+	download ${pythonArchiveWin32} https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin32}
     fi
     download ${zlibArchive} https://www.zlib.net/fossils/${zlibArchive}
 fi
@@ -665,11 +663,11 @@ if [ 1 = 1 ]; then
     tar -xf ${mpfrArchive}
     echo "${bold}---------- Extracting ${newlibArchive}${normal}"
     tar -xf ${newlibArchive}
-    if [ "${enableWin64}" = "y" ]; then
+    if [ "${enableWin32}" = "y" ]; then
 	echo "${bold}---------- Extracting ${libiconvArchive}${normal}"
 	tar -xf ${libiconvArchive}
-	echo "${bold}---------- Extracting ${pythonArchiveWin64}${normal}"
-	7za x ${pythonArchiveWin64} -o${pythonWin64}
+	echo "${bold}---------- Extracting ${pythonArchiveWin32}${normal}"
+	7za x ${pythonArchiveWin32} -o${pythonWin32}
     fi
     echo "${bold}---------- Extracting ${zlibArchive}${normal}"
     tar -xf ${zlibArchive}
@@ -688,7 +686,7 @@ if [ 1 = 1 ]; then
     
     buildBinutils ${buildNative} ${installNative} "" "--build=${hostTriplet} --host=${hostTriplet}" "${documentationTypes}"
 fi    
-buildGcc ${buildNative} ${installNative} "" "--enable-languages=c --without-headers"
+buildGcc ${buildNative} ${installNative} "" "--enable-languages=c --without-headers --build=${hostTriplet} --host=${hostTriplet}"
 if [ 1 = 1 ]; then
 buildNewlib \
 	"" \
@@ -700,7 +698,7 @@ buildNewlib \
 		--disable-newlib-atexit-dynamic-alloc" \
 	"${documentationTypes}"
 fi
-buildGccFinal "-final" "-Os" "${installNative}" "${documentationTypes}"
+buildGccFinal "-final" "-Os" "${installNative}" "${documentationTypes} --build=${hostTriplet} --host=${hostTriplet}"
 if [ "${skipGdb}" = "n" ]; then
     buildExpat ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
     buildGdb \
@@ -715,16 +713,17 @@ postCleanup ${installNative} "" "$(uname -mo)" ""
 find ${installNative} -type f -executable -exec strip {} \; || true
 find ${installNative} -type f -exec chmod a-w {} +
 if [ ${buildDocumentation} = "y" ]; then
-	find ${installNative}/share/doc -mindepth 2 -name '*.pdf' -exec mv {} ${installNative}/share/doc \;
+    find ${installNative}/share/doc -mindepth 2 -name '*.pdf' -exec mv {} ${installNative}/share/doc \;
 fi
-echo "${bold}********** Package${normal}"
-rm -rf ${package}
-ln -s ${installNative} ${package}
-rm -rf ${packageArchiveNative}
-XZ_OPT=${XZ_OPT-"-9e -v"} tar -cJf ${packageArchiveNative} --mtime='@0' --numeric-owner --group=0 --owner=0 $(find ${package}/ -mindepth 1 -maxdepth 1)
-rm -rf ${package}
-
-if [ "${enableWin64}" = "y" ]; then
+if [ 1 = 1 ]; then
+    echo "${bold}********** Package${normal}"
+    rm -rf ${package}
+    ln -s ${installNative} ${package}
+    rm -rf ${packageArchiveNative}
+    XZ_OPT=${XZ_OPT-"-9e -v"} tar -cJf ${packageArchiveNative} --mtime='@0' --numeric-owner --group=0 --owner=0 $(find ${package}/ -mindepth 1 -maxdepth 1)
+    rm -rf ${package}
+fi
+if [ "${enableWin32}" = "y" ]; then
 buildMingw() {
     (
 	local triplet="${1}"
@@ -757,41 +756,41 @@ buildMingw() {
 	cp -R ${installNative}/lib/gcc ${installFolder}/lib/gcc
 	mkdir -p ${installFolder}/share
 	if [ ${buildDocumentation} = "y" ]; then
-		cp -R ${installNative}/share/doc ${installFolder}/share/doc
+	    cp -R ${installNative}/share/doc ${installFolder}/share/doc
 	fi
 	cp -R ${installNative}/share/gcc-* ${installFolder}/share/
-
+	
 	(
-		echo "${bold}********** ${bannerPrefix}${libiconv}${normal}"
-		mkdir -p ${buildFolder}/${libiconv}
-		cd ${buildFolder}/${libiconv}
-		echo "${bold}---------- ${bannerPrefix}${libiconv} configure${normal}"
-		${top}/${sources}/${libiconv}/configure \
-			--build=${hostTriplet} \
-			--host=${triplet} \
-			--prefix=${top}/${buildFolder}/${prerequisites}/${libiconv} \
-			--disable-shared \
-			--disable-nls
-		echo "${bold}---------- ${bannerPrefix}${libiconv} make${normal}"
-		make ${silent} -j$(nproc)
-		echo "${bold}---------- ${bannerPrefix}${libiconv} make install${normal}"
-		make ${silent} install
-		cd ${top}
-		if [ "${keepBuildFolders}" = "n" ]; then
-			echo "${bold}---------- ${bannerPrefix}${libiconv} remove build folder${normal}"
-			rm -rf ${top}/${buildFolder}/${libiconv}
-		fi
+	    echo "${bold}********** ${bannerPrefix}${libiconv}${normal}"
+	    mkdir -p ${buildFolder}/${libiconv}
+	    cd ${buildFolder}/${libiconv}
+	    echo "${bold}---------- ${bannerPrefix}${libiconv} configure${normal}"
+	    ${top}/${sources}/${libiconv}/configure \
+		  --build=${hostTriplet} \
+		  --host=${triplet} \
+		  --prefix=${top}/${buildFolder}/${prerequisites}/${libiconv} \
+		  --disable-shared \
+		  --disable-nls
+	    echo "${bold}---------- ${bannerPrefix}${libiconv} make${normal}"
+	    make ${silent} -j$(nproc)
+	    echo "${bold}---------- ${bannerPrefix}${libiconv} make install${normal}"
+	    make ${silent} install
+	    cd ${top}
+	    if [ "${keepBuildFolders}" = "n" ]; then
+		echo "${bold}---------- ${bannerPrefix}${libiconv} remove build folder${normal}"
+		rm -rf ${top}/${buildFolder}/${libiconv}
+	    fi
 	)
 
 	buildZlib \
-		${buildFolder} \
-		${bannerPrefix} \
-		"-f win32/Makefile.gcc PREFIX=\"${triplet}-\" CFLAGS=\"${CFLAGS}\"" \
-		"-f win32/Makefile.gcc \
+	    ${buildFolder} \
+	    ${bannerPrefix} \
+	    "-f win32/Makefile.gcc PREFIX=\"${triplet}-\" CFLAGS=\"${CFLAGS}\"" \
+	    "-f win32/Makefile.gcc \
 			BINARY_PATH=\"${top}/${buildFolder}/${prerequisites}/${zlib}/bin\" \
 			INCLUDE_PATH=\"${top}/${buildFolder}/${prerequisites}/${zlib}/include\" \
 			LIBRARY_PATH=\"${top}/${buildFolder}/${prerequisites}/${zlib}/lib\""
-
+	
 	buildGmp \
 		${buildFolder} \
 		${bannerPrefix} \
@@ -812,22 +811,21 @@ buildMingw() {
 		${bannerPrefix} \
 		"--build=${hostTriplet} --host=${triplet}"
 
-
 	buildBinutils \
 		${buildFolder} \
 		${installFolder} \
 		${bannerPrefix} \
 		"--build=${hostTriplet} --host=${triplet}" \
 		""
-
+	clear
 	buildGcc \
 		${buildFolder} \
 		${installFolder} \
 		${bannerPrefix} \
 		"--build=${hostTriplet} --host=${triplet} \
-			--enable-languages=c,c++ \
-			--with-headers=yes \
-			--with-libiconv-prefix=${top}/${buildFolder}/${prerequisites}/${libiconv}"
+		--enable-languages=c,c++ \
+		--with-headers=yes \
+		--with-libiconv-prefix=${top}/${buildFolder}/${prerequisites}/${libiconv}"
 
 	cat > ${buildFolder}/python.sh <<- EOF
 	#!/bin/sh
@@ -898,13 +896,13 @@ buildMingw() {
 }
 
     buildMingw \
-	"x86_64-w64-mingw32" \
-	"-O2 -g -pipe -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4" \
-	${buildWin64} \
-	${installWin64} \
-	${pythonWin64} \
-	"Win64: " \
-	${packageArchiveWin64}
-fi	# if [ "${enableWin64}" = "y" ]; then
+	"i686-w64-mingw32" \
+	"-Os -g -pipe -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4" \
+	${buildWin32} \
+	${installWin32} \
+	${pythonWin32} \
+	"Win32: " \
+	${packageArchiveWin32}
+fi	# if [ "${enableWin32}" = "y" ]; then
 
 echo "${bold}********** Done${normal}"
