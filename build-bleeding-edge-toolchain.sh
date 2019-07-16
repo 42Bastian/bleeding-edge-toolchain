@@ -338,7 +338,7 @@ buildGcc() {
 	local configureOptions="${4}"
 	echo "${bold}********** ${bannerPrefix}${gcc}${normal}"
 	mkdir -p ${buildFolder}/${gcc}
-	#	cp ~/t-rmprofile $sources/$gcc/gcc/config/arm
+	# Pull in big endian patch
 	cp t-multilib $sources/$gcc/gcc/config/arm
 	cd ${buildFolder}/${gcc}
 	export CPPFLAGS="-I${top}/${buildFolder}/${prerequisites}/${zlib}/include ${BASE_CPPFLAGS-} ${CPPFLAGS-}"
@@ -587,21 +587,17 @@ postCleanup() {
 	host system: ${hostSystem}
 	target system: ${target}
 	compiler: ${CC-gcc} $(${CC-gcc} --version | grep -o '[0-9]\.[0-9]\.[0-9]')
-
+      
 	Toolchain components:
 	- ${gcc}
 	- ${newlib}
 	- ${binutils}
-        EOF
-	if [ "${skipGdb}" = "n" ]; then
-	    echo - ${gdb} >> ${installFolder}/info.txt
-	fi
-	cat >> ${installFolder}/info.txt <<- EOF
-	$(echo -en "- ${expat}\n- ${gmp}\n- ${isl}\n- ${mpc}\n- ${mpfr}\n- ${zlib}\n${extraComponents}" | sort)
-
+	$([ "${skipGdb}" = "n" ] && echo - ${gdb})
+	$(echo "- ${expat}\n- ${gmp}\n- ${isl}\n- ${mpc}\n- ${mpfr}\n- ${zlib}\n${extraComponents}" | sort)
 	This package was build with a modified bleeding-edge script from Freddie Chopin.
-        Original script at https://github.com/FreddieChopin/bleeding-edge-toolchain
+	Original script at https://github.com/FreddieChopin/bleeding-edge-toolchain
 	EOF
+	
 	cp ${0} ${installFolder}
 }
 if [ 1 = 1 ]; then
@@ -772,7 +768,7 @@ if [ "${skipNanoLibraries}" = "n" ]; then
 
 	copyNanoLibraries "${top}/${buildNative}/${nanoLibraries}" "${top}/${installNative}"
 fi
-
+if [ 0 = 1 ]; then
 buildNewlib \
 	"" \
 	"-O2" \
@@ -782,7 +778,7 @@ buildNewlib \
 		--enable-newlib-io-long-long \
 		--disable-newlib-atexit-dynamic-alloc" \
 	"${documentationTypes}"
-
+fi
 buildGccFinal "-final" "-Os" "${installNative}" "${documentationTypes}"
 if [ "${skipGdb}" = "n" ]; then
     buildGdb \
@@ -793,6 +789,7 @@ if [ "${skipGdb}" = "n" ]; then
 	"${documentationTypes}"
 fi
 postCleanup ${installNative} "" "$(uname -mo)" ""
+
 find ${installNative} -type f -executable -exec strip {} \; || true
 find ${installNative} -type f -exec chmod a-w {} +
 if [ ${buildDocumentation} = "y" ]; then
