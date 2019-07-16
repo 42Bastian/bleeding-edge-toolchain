@@ -12,7 +12,7 @@
 set -e
 set -u
 
-binutilsVersion="2.32"
+binutilsVersion="2.30"
 expatVersion="2.2.6"
 gccVersion="9.1.0"
 gdbVersion="8.2.1"
@@ -63,7 +63,7 @@ pythonArchiveWin64="${pythonWin64}.msi"
 zlib="zlib-${zlibVersion}"
 zlibArchive="${zlib}.tar.gz"
 
-pkgversion="bleeding-edge-toolchain"
+pkgversion="SCIOPTA toolchain with big-endian patch"
 target="arm-none-eabi"
 package="${target}-${gcc}-$(date +'%y%m%d')"
 packageArchiveNative="${package}.tar.xz"
@@ -78,6 +78,8 @@ enableWin64="n"
 keepBuildFolders="n"
 skipNanoLibraries="n"
 buildDocumentation="y"
+skipGdb="n"
+silent="-s"
 while [ ${#} -gt 0 ]; do
 	case ${1} in
 		--enable-win32)
@@ -95,7 +97,12 @@ while [ ${#} -gt 0 ]; do
 		--skip-nano-libraries)
 			skipNanoLibraries="y"
 			;;
-
+		--skip-gdb)
+		    skipGdb="y"
+		    ;;
+		--verbose)
+		    silent=
+		    ;;
 		*)
 			echo "Usage: $0 [--enable-win32] [--enable-win64] [--keep-build-folders] [--skip-documentation] [--skip-nano-libraries]" >&2
 			exit 1
@@ -127,9 +134,9 @@ buildZlib() {
 	echo "${bold}---------- ${bannerPrefix}${zlib} configure${normal}"
 	./configure --static --prefix=${top}/${buildFolder}/${prerequisites}/${zlib}
 	echo "${bold}---------- ${bannerPrefix}${zlib} make${normal}"
-	eval "make ${makeOptions} -j$(nproc)"
+	eval "make ${silent} ${makeOptions} -j$(nproc)"
 	echo "${bold}---------- ${bannerPrefix}${zlib} make install${normal}"
-	eval "make ${makeInstallOptions} install"
+	eval "make ${silent} ${makeInstallOptions} install"
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${zlib} remove build folder${normal}"
@@ -156,9 +163,9 @@ buildGmp() {
 		--disable-shared \
 		--disable-nls"
 	echo "${bold}---------- ${bannerPrefix}${gmp} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${bannerPrefix}${gmp} make install${normal}"
-	make install
+	make ${silent} install
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${gmp} remove build folder${normal}"
@@ -185,9 +192,9 @@ buildMpfr() {
 		--disable-nls \
 		--with-gmp=${top}/${buildFolder}/${prerequisites}/${gmp}"
 	echo "${bold}---------- ${bannerPrefix}${mpfr} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${bannerPrefix}${mpfr} make install${normal}"
-	make install
+	make ${silent} install
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${mpfr} remove build folder${normal}"
@@ -215,9 +222,9 @@ buildMpc() {
 		--with-gmp=${top}/${buildFolder}/${prerequisites}/${gmp} \
 		--with-mpfr=${top}/${buildFolder}/${prerequisites}/${mpfr}"
 	echo "${bold}---------- ${bannerPrefix}${mpc} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${bannerPrefix}${mpc} make install${normal}"
-	make install
+	make ${silent} install
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${mpc} remove build folder${normal}"
@@ -244,9 +251,9 @@ buildIsl() {
 		--disable-nls \
 		--with-gmp-prefix=${top}/${buildFolder}/${prerequisites}/${gmp}"
 	echo "${bold}---------- ${bannerPrefix}${isl} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${bannerPrefix}${isl} make install${normal}"
-	make install
+	make ${silent} install
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${isl} remove build folder${normal}"
@@ -272,9 +279,9 @@ buildExpat() {
 		--disable-shared \
 		--disable-nls"
 	echo "${bold}---------- ${bannerPrefix}${expat} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${bannerPrefix}${expat} make install${normal}"
-	make install
+	make ${silent} install
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${expat} remove build folder${normal}"
@@ -308,12 +315,12 @@ buildBinutils() {
 		--with-system-zlib \
 		\"--with-pkgversion=${pkgversion}\""
 	echo "${bold}---------- ${bannerPrefix}${binutils} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${bannerPrefix}${binutils} make install${normal}"
-	make install
+	make ${silent} install
 	for documentation in ${documentations}; do
-		echo "${bold}---------- ${bannerPrefix}${binutils} make install-${documentation}${normal}"
-		make install-${documentation}
+		echo "${bold}---------- ${bannerPrefix}${binutils} make ${silent} install-${documentation}${normal}"
+		make ${silent} install-${documentation}
 	done
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
@@ -331,6 +338,8 @@ buildGcc() {
 	local configureOptions="${4}"
 	echo "${bold}********** ${bannerPrefix}${gcc}${normal}"
 	mkdir -p ${buildFolder}/${gcc}
+	#	cp ~/t-rmprofile $sources/$gcc/gcc/config/arm
+	cp t-multilib $sources/$gcc/gcc/config/arm
 	cd ${buildFolder}/${gcc}
 	export CPPFLAGS="-I${top}/${buildFolder}/${prerequisites}/${zlib}/include ${BASE_CPPFLAGS-} ${CPPFLAGS-}"
 	export LDFLAGS="-L${top}/${buildFolder}/${prerequisites}/${zlib}/lib ${BASE_LDFLAGS-} ${LDFLAGS-}"
@@ -363,9 +372,9 @@ buildGcc() {
 		\"--with-pkgversion=${pkgversion}\" \
 		--with-multilib-list=rmprofile"
 	echo "${bold}---------- ${bannerPrefix}${gcc} make all-gcc${normal}"
-	make -j$(nproc) all-gcc
+	make ${silent} -j$(nproc) all-gcc
 	echo "${bold}---------- ${bannerPrefix}${gcc} make install-gcc${normal}"
-	make install-gcc
+	make ${silent} install-gcc
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${gcc} remove build folder${normal}"
@@ -402,17 +411,17 @@ buildNewlib() {
 		--enable-newlib-global-stdio-streams \
 		--disable-nls"
 	echo "${bold}---------- ${newlib}${suffix} make${normal}"
-	make -j$(nproc)
+	make ${silent} -j$(nproc)
 	echo "${bold}---------- ${newlib}${suffix} make install${normal}"
-	make install
+	make ${silent} install
 	for documentation in ${documentations}; do
 		cd ${target}/newlib/libc
 		echo "${bold}---------- ${newlib}${suffix} libc make install-${documentation}${normal}"
-		make install-${documentation}
+		make ${silent} install-${documentation}
 		cd ../../..
 		cd ${target}/newlib/libm
 		echo "${bold}---------- ${newlib}${suffix} libm make install-${documentation}${normal}"
-		make install-${documentation}
+		make ${silent} install-${documentation}
 		cd ../../..
 	done
 	cd ${top}
@@ -431,6 +440,9 @@ buildGccFinal() {
 	local documentations="${4}"
 	echo "${bold}********** ${gcc}${suffix}${normal}"
 	mkdir -p ${buildNative}/${gcc}${suffix}
+	# Pull in big endian patch
+	cp t-multilib $sources/$gcc/gcc/config/arm
+	
 	cd ${buildNative}/${gcc}${suffix}
 	export CPPFLAGS="-I${top}/${buildNative}/${prerequisites}/${zlib}/include ${BASE_CPPFLAGS-} ${CPPFLAGS-}"
 	export LDFLAGS="-L${top}/${buildNative}/${prerequisites}/${zlib}/lib ${BASE_LDFLAGS-} ${LDFLAGS-}"
@@ -469,12 +481,12 @@ buildGccFinal() {
 		"--with-pkgversion=${pkgversion}" \
 		--with-multilib-list=rmprofile
 	echo "${bold}---------- ${gcc}${suffix} make${normal}"
-	make -j$(nproc) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
+	make ${silent} -j$(nproc) INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
 	echo "${bold}---------- ${gcc}${suffix} make install${normal}"
-	make install
+	make ${silent} install
 	for documentation in ${documentations}; do
 		echo "${bold}---------- ${gcc}${suffix} make install-${documentation}${normal}"
-		make install-${documentation}
+		make ${silent} install-${documentation}
 	done
 	cd ${top}
 	if [ "${keepBuildFolders}" = "n" ]; then
@@ -513,21 +525,21 @@ copyNanoLibraries() {
 		rm -rf ${top}/${buildNative}/${nanoLibraries}
 	fi
 }
-
-buildGdb() {
+if [ "${skipGdb}" = "n" ]; then
+    buildGdb() {
 	(
-	local buildFolder="${1}"
-	local installFolder="${2}"
-	local bannerPrefix="${3}"
-	local configureOptions="${4}"
-	local documentations="${5}"
-	echo "${bold}********** ${bannerPrefix}${gdb}${normal}"
-	mkdir -p ${buildFolder}/${gdb}
-	cd ${buildFolder}/${gdb}
-	export CPPFLAGS="-I${top}/${buildFolder}/${prerequisites}/${zlib}/include ${BASE_CPPFLAGS-} ${CPPFLAGS-}"
-	export LDFLAGS="-L${top}/${buildFolder}/${prerequisites}/${zlib}/lib ${BASE_LDFLAGS-} ${LDFLAGS-}"
-	echo "${bold}---------- ${bannerPrefix}${gdb} configure${normal}"
-	eval "${top}/${sources}/${gdb}/configure \
+	    local buildFolder="${1}"
+	    local installFolder="${2}"
+	    local bannerPrefix="${3}"
+	    local configureOptions="${4}"
+	    local documentations="${5}"
+	    echo "${bold}********** ${bannerPrefix}${gdb}${normal}"
+	    mkdir -p ${buildFolder}/${gdb}
+	    cd ${buildFolder}/${gdb}
+	    export CPPFLAGS="-I${top}/${buildFolder}/${prerequisites}/${zlib}/include ${BASE_CPPFLAGS-} ${CPPFLAGS-}"
+	    export LDFLAGS="-L${top}/${buildFolder}/${prerequisites}/${zlib}/lib ${BASE_LDFLAGS-} ${LDFLAGS-}"
+	    echo "${bold}---------- ${bannerPrefix}${gdb} configure${normal}"
+	    eval "${top}/${sources}/${gdb}/configure \
 		${configureOptions} \
 		--target=${target} \
 		--prefix=${top}/${installFolder} \
@@ -544,22 +556,22 @@ buildGdb() {
 		--with-libmpfr-prefix=${top}/${buildFolder}/${prerequisites}/${mpfr} \
 		\"--with-gdb-datadir='\\\${prefix}'/${target}/share/gdb\" \
 		\"--with-pkgversion=${pkgversion}\""
-	echo "${bold}---------- ${bannerPrefix}${gdb} make${normal}"
-	make -j$(nproc)
-	echo "${bold}---------- ${bannerPrefix}${gdb} make install${normal}"
-	make install
-	for documentation in ${documentations}; do
+	    echo "${bold}---------- ${bannerPrefix}${gdb} make${normal}"
+	    make ${silent} -j$(nproc)
+	    echo "${bold}---------- ${bannerPrefix}${gdb} make install${normal}"
+	    make ${silent} install
+	    for documentation in ${documentations}; do
 		echo "${bold}---------- ${bannerPrefix}${gdb} make install-${documentation}${normal}"
-		make install-${documentation}
-	done
-	cd ${top}
-	if [ "${keepBuildFolders}" = "n" ]; then
+		make ${silent} install-${documentation}
+	    done
+	    cd ${top}
+	    if [ "${keepBuildFolders}" = "n" ]; then
 		echo "${bold}---------- ${bannerPrefix}${gdb} remove build folder${normal}"
 		rm -rf ${buildFolder}/${gdb}
-	fi
+	    fi
 	)
-}
-
+    }
+fi
 postCleanup() {
 	local installFolder="${1}"
 	local bannerPrefix="${2}"
@@ -580,139 +592,166 @@ postCleanup() {
 	- ${gcc}
 	- ${newlib}
 	- ${binutils}
-	- ${gdb}
+        EOF
+	if [ "${skipGdb}" = "n" ]; then
+	    echo - ${gdb} >> ${installFolder}/info.txt
+	fi
+	cat >> ${installFolder}/info.txt <<- EOF
 	$(echo -en "- ${expat}\n- ${gmp}\n- ${isl}\n- ${mpc}\n- ${mpfr}\n- ${zlib}\n${extraComponents}" | sort)
 
-	This package and info about it can be found on Freddie Chopin's website:
-	http://www.freddiechopin.info/
+	This package was build with a modified bleeding-edge script from Freddie Chopin.
+        Original script at https://github.com/FreddieChopin/bleeding-edge-toolchain
 	EOF
 	cp ${0} ${installFolder}
 }
-
-echo "${bold}********** Cleanup${normal}"
-rm -rf ${buildNative}
-rm -rf ${installNative}
-mkdir -p ${buildNative}
-mkdir -p ${installNative}
-rm -rf ${buildWin32}
-rm -rf ${installWin32}
-if [ "${enableWin32}" = "y" ]; then
+if [ 1 = 1 ]; then
+    echo "${bold}********** Cleanup${normal}"
+    rm -rf ${buildNative}
+    rm -rf ${installNative}
+    mkdir -p ${buildNative}
+    mkdir -p ${installNative}
+    rm -rf ${buildWin32}
+    rm -rf ${installWin32}
+    if [ "${enableWin32}" = "y" ]; then
 	mkdir -p ${buildWin32}
 	mkdir -p ${installWin32}
-fi
-rm -rf ${buildWin64}
-rm -rf ${installWin64}
-if [ "${enableWin64}" = "y" ]; then
+    fi
+    rm -rf ${buildWin64}
+    rm -rf ${installWin64}
+    if [ "${enableWin64}" = "y" ]; then
 	mkdir -p ${buildWin64}
 	mkdir -p ${installWin64}
+    fi
+    mkdir -p ${sources}
+    find ${sources} -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
+    if [ "${skipGdb}" = "n" ]; then
+	find ${sources} -mindepth 1 -maxdepth 1 -type f ! -name "${binutilsArchive}" \
+	     ! -name "${expatArchive}" \
+	     ! -name "${gccArchive}" \
+	     ! -name "${gdbArchive}" \
+	     ! -name "${gmpArchive}" \
+	     ! -name "${islArchive}" \
+	     ! -name "${libiconvArchive}" \
+	     ! -name "${mpcArchive}" \
+	     ! -name "${mpfrArchive}" \
+	     ! -name "${newlibArchive}" \
+	     ! -name "${pythonArchiveWin32}" \
+	     ! -name "${pythonArchiveWin64}" \
+	     ! -name "${zlibArchive}" \
+	     -exec rm -rf {} +
+    else
+	find ${sources} -mindepth 1 -maxdepth 1 -type f ! -name "${binutilsArchive}" \
+	     ! -name "${expatArchive}" \
+	     ! -name "${gccArchive}" \
+	     ! -name "${gmpArchive}" \
+	     ! -name "${islArchive}" \
+	     ! -name "${libiconvArchive}" \
+	     ! -name "${mpcArchive}" \
+	     ! -name "${mpfrArchive}" \
+	     ! -name "${newlibArchive}" \
+	     ! -name "${pythonArchiveWin32}" \
+	     ! -name "${pythonArchiveWin64}" \
+	     ! -name "${zlibArchive}" \
+	     -exec rm -rf {} +
+    fi    
 fi
-mkdir -p ${sources}
-find ${sources} -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-find ${sources} -mindepth 1 -maxdepth 1 -type f ! -name "${binutilsArchive}" \
-	! -name "${expatArchive}" \
-	! -name "${gccArchive}" \
-	! -name "${gdbArchive}" \
-	! -name "${gmpArchive}" \
-	! -name "${islArchive}" \
-	! -name "${libiconvArchive}" \
-	! -name "${mpcArchive}" \
-	! -name "${mpfrArchive}" \
-	! -name "${newlibArchive}" \
-	! -name "${pythonArchiveWin32}" \
-	! -name "${pythonArchiveWin64}" \
-	! -name "${zlibArchive}" \
-	-exec rm -rf {} +
-
-echo "${bold}********** Download${normal}"
-mkdir -p ${sources}
-cd ${sources}
-download() {
+if [ 1 = 1 ]; then
+    echo "${bold}********** Download${normal}"
+    mkdir -p ${sources}
+    cd ${sources}
+    download() {
 	local ret=0
 	echo "${bold}---------- Downloading ${1}${normal}"
 	curl -L -o ${1} -C - --connect-timeout 30 -Y 1024 -y 30 ${2} || ret=$?
 	if [ $ret -eq 33 ]; then
-		echo 'This happens if the file is complete, continuing...'
+	    echo 'This happens if the file is complete, continuing...'
 	elif [ $ret -ne 0 ]; then
-		exit $ret
+	    exit $ret
 	fi
-}
-download ${binutilsArchive} http://ftp.gnu.org/gnu/binutils/${binutilsArchive}
-download ${expatArchive} https://github.com/libexpat/libexpat/releases/download/$(echo "R_${expatVersion}" | sed 's/\./_/g')/${expatArchive}
-if [ ${gccVersion#*-} = ${gccVersion} ]; then
+    }
+    download ${binutilsArchive} http://ftp.gnu.org/gnu/binutils/${binutilsArchive}
+    download ${expatArchive} https://github.com/libexpat/libexpat/releases/download/$(echo "R_${expatVersion}" | sed 's/\./_/g')/${expatArchive}
+    if [ ${gccVersion#*-} = ${gccVersion} ]; then
 	download ${gccArchive} http://ftp.gnu.org/gnu/gcc/${gcc}/${gccArchive}
-else
+    else
 	download ${gccArchive} https://gcc.gnu.org/pub/gcc/snapshots/${gccVersion}/${gccArchive}
-fi
-download ${gdbArchive} http://ftp.gnu.org/gnu/gdb/${gdbArchive}
-download ${gmpArchive} http://ftp.gnu.org/gnu/gmp/${gmpArchive}
-download ${islArchive} http://isl.gforge.inria.fr/${islArchive}
-if [ "${enableWin32}" = "y" ] || [ "${enableWin64}" = "y" ]; then
+    fi
+    if [ "${skipGdb}" = "n" ]; then
+	download ${gdbArchive} http://ftp.gnu.org/gnu/gdb/${gdbArchive}
+    fi
+    download ${gmpArchive} http://ftp.gnu.org/gnu/gmp/${gmpArchive}
+    download ${islArchive} http://isl.gforge.inria.fr/${islArchive}
+    if [ "${enableWin32}" = "y" ] || [ "${enableWin64}" = "y" ]; then
 	download ${libiconvArchive} http://ftp.gnu.org/pub/gnu/libiconv/${libiconvArchive}
-fi
-download ${mpcArchive} http://ftp.gnu.org/gnu/mpc/${mpcArchive}
-download ${mpfrArchive} http://ftp.gnu.org/gnu/mpfr/${mpfrArchive}
-download ${newlibArchive} http://sourceware.org/pub/newlib/${newlibArchive}
-if [ "${enableWin32}" = "y" ]; then
+    fi
+    download ${mpcArchive} http://ftp.gnu.org/gnu/mpc/${mpcArchive}
+    download ${mpfrArchive} http://ftp.gnu.org/gnu/mpfr/${mpfrArchive}
+    download ${newlibArchive} http://sourceware.org/pub/newlib/${newlibArchive}
+    if [ "${enableWin32}" = "y" ]; then
 	download ${pythonArchiveWin32} https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin32}
-fi
-if [ "${enableWin64}" = "y" ]; then
+    fi
+    if [ "${enableWin64}" = "y" ]; then
 	download ${pythonArchiveWin64} https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin64}
+    fi
+    download ${zlibArchive} https://www.zlib.net/fossils/${zlibArchive}
 fi
-download ${zlibArchive} https://www.zlib.net/fossils/${zlibArchive}
 cd ${top}
-
-echo "${bold}********** Extract${normal}"
-cd ${sources}
-echo "${bold}---------- Extracting ${binutilsArchive}${normal}"
-tar -xf ${binutilsArchive}
-echo "${bold}---------- Extracting ${expatArchive}${normal}"
-tar -xf ${expatArchive}
-echo "${bold}---------- Extracting ${gccArchive}${normal}"
-tar -xf ${gccArchive}
-echo "${bold}---------- Extracting ${gdbArchive}${normal}"
-tar -xf ${gdbArchive}
-echo "${bold}---------- Extracting ${gmpArchive}${normal}"
-tar -xf ${gmpArchive}
-echo "${bold}---------- Extracting ${islArchive}${normal}"
-tar -xf ${islArchive}
-if [ "${enableWin32}" = "y" ] || [ "${enableWin64}" = "y" ]; then
+if [ 1 = 1 ]; then
+    echo "${bold}********** Extract${normal}"
+    cd ${sources}
+    echo "${bold}---------- Extracting ${binutilsArchive}${normal}"
+    tar -xf ${binutilsArchive}
+    echo "${bold}---------- Extracting ${expatArchive}${normal}"
+    tar -xf ${expatArchive}
+    echo "${bold}---------- Extracting ${gccArchive}${normal}"
+    tar -xf ${gccArchive}
+    if [ "${skipGdb}" = "n" ]; then
+	echo "${bold}---------- Extracting ${gdbArchive}${normal}"
+	tar -xf ${gdbArchive}
+    fi
+    echo "${bold}---------- Extracting ${gmpArchive}${normal}"
+    tar -xf ${gmpArchive}
+    echo "${bold}---------- Extracting ${islArchive}${normal}"
+    tar -xf ${islArchive}
+    if [ "${enableWin32}" = "y" ] || [ "${enableWin64}" = "y" ]; then
 	echo "${bold}---------- Extracting ${libiconvArchive}${normal}"
 	tar -xf ${libiconvArchive}
-fi
-echo "${bold}---------- Extracting ${mpcArchive}${normal}"
-tar -xf ${mpcArchive}
-echo "${bold}---------- Extracting ${mpfrArchive}${normal}"
-tar -xf ${mpfrArchive}
-echo "${bold}---------- Extracting ${newlibArchive}${normal}"
-tar -xf ${newlibArchive}
-if [ "${enableWin32}" = "y" ]; then
+    fi
+    echo "${bold}---------- Extracting ${mpcArchive}${normal}"
+    tar -xf ${mpcArchive}
+    echo "${bold}---------- Extracting ${mpfrArchive}${normal}"
+    tar -xf ${mpfrArchive}
+    echo "${bold}---------- Extracting ${newlibArchive}${normal}"
+    tar -xf ${newlibArchive}
+    if [ "${enableWin32}" = "y" ]; then
 	echo "${bold}---------- Extracting ${pythonArchiveWin32}${normal}"
 	7za x ${pythonArchiveWin32} -o${pythonWin32}
-fi
-if [ "${enableWin64}" = "y" ]; then
+    fi
+    if [ "${enableWin64}" = "y" ]; then
 	echo "${bold}---------- Extracting ${pythonArchiveWin64}${normal}"
 	7za x ${pythonArchiveWin64} -o${pythonWin64}
+    fi
+    echo "${bold}---------- Extracting ${zlibArchive}${normal}"
+    tar -xf ${zlibArchive}
+    cd ${top}
 fi
-echo "${bold}---------- Extracting ${zlibArchive}${normal}"
-tar -xf ${zlibArchive}
-cd ${top}
-
-hostTriplet=$(${sources}/${newlib}/config.guess)
-
-buildZlib ${buildNative} "" "" ""
-
-buildGmp ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
-
-buildMpfr ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
-
-buildMpc ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
-
-buildIsl ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
-
-buildExpat ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
-
-buildBinutils ${buildNative} ${installNative} "" "--build=${hostTriplet} --host=${hostTriplet}" "${documentationTypes}"
-
+if [ 1 = 1 ]; then
+    hostTriplet=$(${sources}/${newlib}/config.guess)
+    
+    buildZlib ${buildNative} "" "" ""
+    
+    buildGmp ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
+    
+    buildMpfr ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
+    
+    buildMpc ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
+    
+    buildIsl ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
+    
+    buildExpat ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
+    
+    buildBinutils ${buildNative} ${installNative} "" "--build=${hostTriplet} --host=${hostTriplet}" "${documentationTypes}"
+fi
 buildGcc ${buildNative} ${installNative} "" "--enable-languages=c --without-headers"
 
 if [ "${skipNanoLibraries}" = "n" ]; then
@@ -744,15 +783,15 @@ buildNewlib \
 		--disable-newlib-atexit-dynamic-alloc" \
 	"${documentationTypes}"
 
-buildGccFinal "-final" "-O2" "${installNative}" "${documentationTypes}"
-
-buildGdb \
+buildGccFinal "-final" "-Os" "${installNative}" "${documentationTypes}"
+if [ "${skipGdb}" = "n" ]; then
+    buildGdb \
 	${buildNative} \
 	${installNative} \
 	"" \
 	"--build=${hostTriplet} --host=${hostTriplet} --with-python=yes" \
 	"${documentationTypes}"
-
+fi
 postCleanup ${installNative} "" "$(uname -mo)" ""
 find ${installNative} -type f -executable -exec strip {} \; || true
 find ${installNative} -type f -exec chmod a-w {} +
@@ -817,9 +856,9 @@ buildMingw() {
 			--disable-shared \
 			--disable-nls
 		echo "${bold}---------- ${bannerPrefix}${libiconv} make${normal}"
-		make -j$(nproc)
+		make ${silent} -j$(nproc)
 		echo "${bold}---------- ${bannerPrefix}${libiconv} make install${normal}"
-		make install
+		make ${silent} install
 		cd ${top}
 		if [ "${keepBuildFolders}" = "n" ]; then
 			echo "${bold}---------- ${bannerPrefix}${libiconv} remove build folder${normal}"
@@ -896,8 +935,8 @@ buildMingw() {
 	done
 	EOF
 	chmod +x ${buildFolder}/python.sh
-
-	buildGdb \
+	if [ "${skipGdb}" = "n" ]; then
+	    buildGdb \
 		${buildFolder} \
 		${installFolder} \
 		${bannerPrefix} \
@@ -907,11 +946,11 @@ buildMingw() {
 			--program-suffix=-py \
 			--with-libiconv-prefix=${top}/${buildFolder}/${prerequisites}/${libiconv}" \
 		""
-	if [ "${keepBuildFolders}" = "y" ]; then
+	    if [ "${keepBuildFolders}" = "y" ]; then
 		mv ${buildFolder}/${gdb} ${buildFolder}/${gdb}-py
-	fi
-
-	buildGdb \
+	    fi
+	    
+	    buildGdb \
 		${buildFolder} \
 		${installFolder} \
 		${bannerPrefix} \
@@ -919,7 +958,7 @@ buildMingw() {
 			--with-python=no \
 			--with-libiconv-prefix=${top}/${buildFolder}/${prerequisites}/${libiconv}" \
 		""
-
+	fi
 	postCleanup ${installFolder} ${bannerPrefix} ${triplet} "- ${libiconv}\n- python-${pythonVersion}\n"
 	rm -rf ${installFolder}/lib/gcc/${target}/${gccVersion}/plugin
 	rm -rf ${installFolder}/share/info ${installFolder}/share/man
