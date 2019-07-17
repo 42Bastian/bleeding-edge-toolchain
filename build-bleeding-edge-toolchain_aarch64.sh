@@ -12,7 +12,7 @@
 set -e
 set -u
 
-binutilsVersion="2.30"
+binutilsVersion="2.32"
 expatVersion="2.2.6"
 gccVersion="9.1.0"
 gdbVersion="8.2.1"
@@ -73,33 +73,33 @@ buildDocumentation="y"
 skipGdb="y"
 silent="-s"
 while [ ${#} -gt 0 ]; do
-	case ${1} in
-		--enable-win32)
-			enableWin32="y"
-			;;
-		--keep-build-folders)
-			keepBuildFolders="y"
-			;;
-		--skip-documentation)
-			buildDocumentation="n"
-			;;
-
-		--enable-gdb)
-		    skipGdb="n"
-		    ;;
-		--verbose)
-		    silent=
-		    ;;
-		*)
-			echo "Usage: $0 [--enable-win32] [--keep-build-folders] [--skip-documentation] [--enable-gdb] [--verbose]" >&2
-			exit 1
-	esac
-	shift
+    case ${1} in
+	--enable-win32)
+	    enableWin32="y"
+	    ;;
+	--keep-build-folders)
+	    keepBuildFolders="y"
+	    ;;
+	--skip-documentation)
+	    buildDocumentation="n"
+	    ;;
+	
+	--enable-gdb)
+	    skipGdb="n"
+	    ;;
+	--verbose)
+	    silent=
+	    ;;
+	*)
+	    echo "Usage: $0 [--enable-win32] [--keep-build-folders] [--skip-documentation] [--enable-gdb] [--verbose]" >&2
+	    exit 1
+    esac
+    shift
 done
 
 documentationTypes=""
 if [ ${buildDocumentation} = "y" ]; then
-	documentationTypes="html pdf"
+    documentationTypes="html pdf"
 fi
 
 BASE_CPPFLAGS="-pipe"
@@ -341,8 +341,8 @@ buildGcc() {
 		--disable-libquadmath \
 		--disable-libssp \
 		--disable-libstdcxx-pch \
-		--disable-nls \
-		--disable-shared \
+		--enable-nls \
+		--enable-shared \
 		--disable-threads \
 		--disable-tls \
 		--with-gnu-as \
@@ -350,8 +350,10 @@ buildGcc() {
 		--with-newlib \
 		--enable-c99 \
 		--enable-lto \
-		--enable-multilib \
-		 --disable-multiarch --enable-long-long --with-ppl=no --with-isl=no \
+		--enable-multilib --enable-checking=release --disable-bootstrap\
+	--without-included-gettext --disable-sjlj-exceptions --enable-gnu-unique-object --enable-linker-build-id\
+	--enable-clocale=gnu --enable-libstdcxx-debug --with-cloog=no\
+		--disable-multiarch --with-ppl=no --with-isl=no \
                 --with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419 \
 		--with-sysroot=${top}/${installFolder}/${target} \
 		--with-system-zlib \
@@ -459,7 +461,7 @@ buildGccFinal() {
 		--enable-c99 \
 		--enable-lto \
 		--enable-multilib \
-		--disable-multiarch --enable-long-long --with-ppl=no --with-isl=no \
+		--disable-multiarch --with-ppl=no --with-isl=no \
                 --with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419 \
 		--with-headers=yes \
 		--with-sysroot=${top}/${installFolder}/${target} \
@@ -559,7 +561,7 @@ postCleanup() {
 	
 	cp ${0} ${installFolder}
 }
-if [ 1 = 1 ]; then
+if [ 0 = 1 ]; then
     echo "${bold}********** Cleanup${normal}"
     rm -rf ${buildNative}
     rm -rf ${installNative}
@@ -601,7 +603,7 @@ if [ 1 = 1 ]; then
 	     -exec rm -rf {} +
     fi    
 fi
-if [ 1 = 1 ]; then
+if [ 0 = 1 ]; then
     echo "${bold}********** Download${normal}"
     mkdir -p ${sources}
     cd ${sources}
@@ -640,7 +642,7 @@ if [ 1 = 1 ]; then
     download ${zlibArchive} https://www.zlib.net/fossils/${zlibArchive}
 fi
 cd ${top}
-if [ 1 = 1 ]; then
+if [ 0 = 1 ]; then
     echo "${bold}********** Extract${normal}"
     cd ${sources}
     echo "${bold}---------- Extracting ${binutilsArchive}${normal}"
@@ -675,7 +677,7 @@ if [ 1 = 1 ]; then
 fi
 
 hostTriplet=$(${sources}/${newlib}/config.guess)
-if [ 1 = 1 ]; then    
+if [ 0 = 1 ]; then    
     buildZlib ${buildNative} "" "" ""
     
     buildGmp ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
@@ -686,8 +688,8 @@ if [ 1 = 1 ]; then
     
     buildBinutils ${buildNative} ${installNative} "" "--build=${hostTriplet} --host=${hostTriplet}" "${documentationTypes}"
 fi    
-buildGcc ${buildNative} ${installNative} "" "--enable-languages=c --without-headers --build=${hostTriplet} --host=${hostTriplet}"
-if [ 1 = 1 ]; then
+#buildGcc ${buildNative} ${installNative} "" "--enable-languages=c --without-headers --build=${hostTriplet} --host=${hostTriplet}"
+if [ 0 = 1 ]; then
 buildNewlib \
 	"" \
 	"-O2" \
@@ -698,7 +700,7 @@ buildNewlib \
 		--disable-newlib-atexit-dynamic-alloc" \
 	"${documentationTypes}"
 fi
-buildGccFinal "-final" "-Os" "${installNative}" "${documentationTypes} --build=${hostTriplet} --host=${hostTriplet}"
+#buildGccFinal "-final" "-Os" "${installNative}" "${documentationTypes} --build=${hostTriplet} --host=${hostTriplet}"
 if [ "${skipGdb}" = "n" ]; then
     buildExpat ${buildNative} "" "--build=${hostTriplet} --host=${hostTriplet}"
     buildGdb \
@@ -708,6 +710,7 @@ if [ "${skipGdb}" = "n" ]; then
 	"--build=${hostTriplet} --host=${hostTriplet} --with-python=yes" \
 	"${documentationTypes}"
 fi
+if [ 0 = 1 ]; then
 postCleanup ${installNative} "" "$(uname -mo)" ""
 
 find ${installNative} -type f -executable -exec strip {} \; || true
@@ -715,7 +718,8 @@ find ${installNative} -type f -exec chmod a-w {} +
 if [ ${buildDocumentation} = "y" ]; then
     find ${installNative}/share/doc -mindepth 2 -name '*.pdf' -exec mv {} ${installNative}/share/doc \;
 fi
-if [ 1 = 1 ]; then
+fi
+if [ 0 = 1 ]; then
     echo "${bold}********** Package${normal}"
     rm -rf ${package}
     ln -s ${installNative} ${package}
