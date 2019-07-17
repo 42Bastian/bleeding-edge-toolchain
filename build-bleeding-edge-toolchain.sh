@@ -768,7 +768,7 @@ if [ "${skipNanoLibraries}" = "n" ]; then
 
 	copyNanoLibraries "${top}/${buildNative}/${nanoLibraries}" "${top}/${installNative}"
 fi
-if [ 0 = 1 ]; then
+if [ 1 = 1 ]; then
 buildNewlib \
 	"" \
 	"-O2" \
