@@ -5,6 +5,12 @@ All-in-one script to build bleeding-edge-toolchain for ARM microcontrollers.
 
 [bleeding-edge-toolchain - what it's all about?](https://freddiechopin.info/en/articles/35-arm/87-bleeding-edge-toolchain-o-co-chodzi)
 
+SCIOPTA Version
+---------------
+This version contains patches for MacOS build and full Aarch32 libraries and big-endian support for Cortex-R (TI Hercules).
+
+By default is skips nano libraries, GDB and documentation.
+
 Toolchain for Linux
 -------------------
 

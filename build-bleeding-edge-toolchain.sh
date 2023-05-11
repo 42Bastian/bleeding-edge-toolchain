@@ -64,7 +64,7 @@ zlib="zlib-${zlibVersion}"
 zlibArchive="${zlib}.tar.gz"
 
 gnuMirror="https://ftpmirror.gnu.org"
-pkgversion="bleeding-edge-toolchain"
+pkgversion="SCIOPTA with BE patch"
 target="arm-none-eabi"
 package="${target}-${gcc}-$(date +'%y%m%d')"
 packageArchiveNative="${package}.tar.xz"
@@ -78,8 +78,11 @@ if [ -n "${TERM-}" ]; then
 	normal="$(tput sgr0)"
 fi
 uname="$(uname)"
-
+GCC_FLAGS=#
 if [ "${uname}" = "Darwin" ]; then
+	if [ ${gccVersion} = "12.2.0" ]; then
+		GCC_FLAGS="CFLAGS=-O1 CXXFLAGS=-O1"
+	fi
 	nproc="$(sysctl -n hw.ncpu)"
 	hostSystem="$(uname -sm)"
 else
@@ -90,9 +93,9 @@ fi
 enableWin32="n"
 enableWin64="n"
 keepBuildFolders="n"
-skipGdb="n"
-skipNanoLibraries="n"
-buildDocumentation="y"
+skipGdb="y"
+skipNanoLibraries="y"
+buildDocumentation="n"
 quiet="n"
 resume="n"
 while [ "${#}" -gt 0 ]; do
@@ -452,7 +455,7 @@ buildGcc() {
 			--with-mpc=\"${top}/${buildFolder}/${prerequisites}/${mpc}\" \
 			--with-isl=\"${top}/${buildFolder}/${prerequisites}/${isl}\" \
 			--with-pkgversion=\"${pkgversion}\" \
-			--with-multilib-list=rmprofile"
+			--with-multilib-list=rmprofile,aprofile"
 		messageB "${bannerPrefix}${gcc} make all-gcc"
 		make "-j${nproc}" all-gcc
 		messageB "${bannerPrefix}${gcc} make install-gcc"
@@ -570,7 +573,8 @@ buildGccFinal() {
 			--with-mpc=\"${top}/${buildNative}/${prerequisites}/${mpc}\" \
 			--with-isl=\"${top}/${buildNative}/${prerequisites}/${isl}\" \
 			--with-pkgversion=\"${pkgversion}\" \
-			--with-multilib-list=rmprofile"
+			--with-multilib-list=rmprofile,aprofile \
+			${GCC_FLAGS}"
 		messageB "${gcc}${suffix} make"
 		make "-j${nproc}" INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
 		messageB "${gcc}${suffix} make install"
@@ -805,6 +809,12 @@ extract() {
 extract "${binutilsArchive}"
 extract "${expatArchive}"
 extract "${gccArchive}"
+# SCIOPTA
+if [ ! -f "${gcc}_patched" ]; then
+    messageB "Patching ${gcc}"
+    cp ../t-multilib ${gcc}/gcc/config/arm
+    touch "${gcc}_patched"
+fi
 if [ "${skipGdb}" = "n" ]; then
 	extract "${gdbArchive}"
 
