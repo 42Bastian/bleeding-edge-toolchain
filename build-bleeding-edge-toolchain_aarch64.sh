@@ -14,7 +14,7 @@ set -eu
 
 binutilsVersion="2.39"
 expatVersion="2.5.0"
-gccVersion="12.2.0"
+gccVersion="12.3.0"
 gdbVersion="12.1"
 gmpVersion="6.2.1"
 islVersion="0.25"
@@ -65,7 +65,7 @@ zlibArchive="${zlib}.tar.gz"
 
 gnuMirror="https://ftpmirror.gnu.org"
 pkgversion="SCIOPTA with BE patch"
-target="arm-none-eabi"
+target="aarch64-none-elf"
 package="${target}-${gcc}-$(date +'%y%m%d')"
 packageArchiveNative="${package}.tar.xz"
 packageArchiveWin32="${package}-win32.7z"
@@ -80,9 +80,8 @@ fi
 uname="$(uname)"
 GCC_FLAGS=#
 if [ "${uname}" = "Darwin" ]; then
-#    if [[ ${gccVersion} = "12.2.0" || ${gccVersion} = "12.3.0" ]]; then
 	if [ ${gccVersion} = "12.2.0" ]; then
-		GCC_FLAGS="CFLAGS=-Os CXXFLAGS=-Os"
+	    GCC_FLAGS="CFLAGS=-O0 CXXFLAGS=-O0"
 	fi
 	nproc="$(sysctl -n hw.ncpu)"
 	hostSystem="$(uname -sm)"
@@ -90,10 +89,10 @@ else
 	nproc="$(nproc)"
 	hostSystem="$(uname -mo)"
 fi
-echo $GCC_FLAGS
+
 enableWin32="n"
 enableWin64="n"
-keepBuildFolders="n"
+keepBuildFolders="y"
 skipGdb="y"
 skipNanoLibraries="y"
 buildDocumentation="n"
@@ -455,8 +454,7 @@ buildGcc() {
 			--with-mpfr=\"${top}/${buildFolder}/${prerequisites}/${mpfr}\" \
 			--with-mpc=\"${top}/${buildFolder}/${prerequisites}/${mpc}\" \
 			--with-isl=\"${top}/${buildFolder}/${prerequisites}/${isl}\" \
-			--with-pkgversion=\"${pkgversion}\" \
-			--with-multilib-list=rmprofile,aprofile"
+			--with-pkgversion=\"${pkgversion}\" "
 		messageB "${bannerPrefix}${gcc} make all-gcc"
 		make "-j${nproc}" all-gcc
 		messageB "${bannerPrefix}${gcc} make install-gcc"
@@ -574,7 +572,6 @@ buildGccFinal() {
 			--with-mpc=\"${top}/${buildNative}/${prerequisites}/${mpc}\" \
 			--with-isl=\"${top}/${buildNative}/${prerequisites}/${isl}\" \
 			--with-pkgversion=\"${pkgversion}\" \
-			--with-multilib-list=rmprofile,aprofile \
 			${GCC_FLAGS}"
 		messageB "${gcc}${suffix} make"
 		make "-j${nproc}" INHIBIT_LIBC_CFLAGS="-DUSE_TM_CLONE_REGISTRY=0"
@@ -810,12 +807,6 @@ extract() {
 extract "${binutilsArchive}"
 extract "${expatArchive}"
 extract "${gccArchive}"
-# SCIOPTA
-if [ ! -f "${gcc}_patched" ]; then
-    messageB "Patching ${gcc}"
-    cp ../t-multilib ${gcc}/gcc/config/arm
-    touch "${gcc}_patched"
-fi
 if [ "${skipGdb}" = "n" ]; then
 	extract "${gdbArchive}"
 
