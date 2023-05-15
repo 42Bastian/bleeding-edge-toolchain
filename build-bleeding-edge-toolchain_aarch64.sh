@@ -14,7 +14,7 @@ set -eu
 
 binutilsVersion="2.39"
 expatVersion="2.5.0"
-gccVersion="12.3.0"
+gccVersion="12.2.0"
 gdbVersion="12.1"
 gmpVersion="6.2.1"
 islVersion="0.25"
@@ -81,7 +81,7 @@ uname="$(uname)"
 GCC_FLAGS=#
 if [ "${uname}" = "Darwin" ]; then
 	if [ ${gccVersion} = "12.2.0" ]; then
-	    GCC_FLAGS="CFLAGS=-O0 CXXFLAGS=-O0"
+	    GCC_FLAGS="CFLAGS=-O1 CXXFLAGS=-O1"
 	fi
 	nproc="$(sysctl -n hw.ncpu)"
 	hostSystem="$(uname -sm)"
@@ -91,8 +91,8 @@ else
 fi
 
 enableWin32="n"
-enableWin64="n"
-keepBuildFolders="y"
+enableWin64="y"
+keepBuildFolders="n"
 skipGdb="y"
 skipNanoLibraries="y"
 buildDocumentation="n"
