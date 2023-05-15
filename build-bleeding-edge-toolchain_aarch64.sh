@@ -12,6 +12,9 @@
 
 set -eu
 
+#Remove . from path as it blocks building
+export PATH=${PATH//:.:/:}
+
 binutilsVersion="2.39"
 expatVersion="2.5.0"
 gccVersion="12.2.0"

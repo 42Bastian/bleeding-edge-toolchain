@@ -11,6 +11,8 @@
 #
 
 set -eu
+#Remove . from path as it blocks building
+export PATH=${PATH//:.:/:}
 
 binutilsVersion="2.39"
 expatVersion="2.5.0"
@@ -92,7 +94,7 @@ else
 fi
 echo $GCC_FLAGS
 enableWin32="n"
-enableWin64="n"
+enableWin64="y"
 keepBuildFolders="n"
 skipGdb="y"
 skipNanoLibraries="y"
