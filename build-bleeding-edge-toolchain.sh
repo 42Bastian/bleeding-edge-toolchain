@@ -923,8 +923,9 @@ extract "${newlibArchive}"
 # SCIOPTA
 if [ ! -f "${newlib}_patched" ]; then
     messageB "Patching ${newlib}"
-    sed -i "/define/s/USE_VFP/USE_VFP_OFF/" ${newlib}/newlib/libc/machine/arm/*.S
-    sed -i "/define/s/USE_NEON/USE_NEON_OFF/" ${newlib}/newlib/libc/machine/arm/*.S
+    sed -i "/.syntax/i #undef __ARM_NEON__" ${newlib}/newlib/libc/machine/arm/memcpy-armv7a.S
+    sed -i "/.syntax/i #define __SOFTFP__" ${newlib}/newlib/libc/machine/arm/memcpy-armv7a.S
+    sed -i "/^VPATH/i AM_CFLAGS +=-mgeneral-regs-only" ${newlib}/newlib/libc/string/Makefile.in
     touch "${newlib}_patched"
 fi
 #
