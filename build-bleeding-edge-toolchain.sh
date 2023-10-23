@@ -66,7 +66,7 @@ zlib="zlib-${zlibVersion}"
 zlibArchive="${zlib}.tar.gz"
 
 gnuMirror="https://ftpmirror.gnu.org"
-pkgversion="SCIOPTA with BE patch"
+pkgversion="SCIOPTA with BE and VFP patch"
 target="arm-none-eabi"
 package="${target}-${gcc}-$(date +'%y%m%d')"
 packageArchiveNative="${package}.tar.xz"
@@ -920,6 +920,14 @@ fi
 extract "${mpcArchive}"
 extract "${mpfrArchive}"
 extract "${newlibArchive}"
+# SCIOPTA
+if [ ! -f "${newlib}_patched" ]; then
+    messageB "Patching ${newlib}"
+    sed -i "/define/s/USE_VFP/USE_VFP_OFF/" ${newlib}/newlib/libc/machine/arm/*.S
+    sed -i "/define/s/USE_NEON/USE_NEON_OFF/" ${newlib}/newlib/libc/machine/arm/*.S
+    touch "${newlib}_patched"
+fi
+#
 if [ ! -f "${pythonArchiveWin32}_extracted" ] && [ "${enableWin32}" = "y" ]; then
 	messageB "Extracting ${pythonArchiveWin32}"
 	7za x "${pythonArchiveWin32}" "-o${pythonWin32}"
@@ -971,7 +979,6 @@ if [ "${skipNanoLibraries}" = "n" ]; then
 		copyNanoLibraries "${top}/${buildNative}/${nanoLibraries}" "${top}/${installNative}"
 	fi
 fi
-
 buildNewlib \
 	"" \
 	"-O2" \
