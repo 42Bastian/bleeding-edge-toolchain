@@ -82,9 +82,8 @@ fi
 uname="$(uname)"
 GCC_FLAGS=#
 if [ "${uname}" = "Darwin" ]; then
-#    if [[ ${gccVersion} = "12.2.0" || ${gccVersion} = "12.3.0" ]]; then
-	if [ ${gccVersion} = "12.2.0" ]; then
-		GCC_FLAGS="CFLAGS=-Os CXXFLAGS=-Os"
+      if [ ${gccVersion} = "12.2.0" ]; then
+	GCC_FLAGS="CFLAGS=-O1 CXXFLAGS=-O2"
 	fi
 	nproc="$(sysctl -n hw.ncpu)"
 	hostSystem="$(uname -sm)"
