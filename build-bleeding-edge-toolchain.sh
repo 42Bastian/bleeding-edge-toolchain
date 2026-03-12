@@ -4,7 +4,7 @@
 #
 # file: build-bleeding-edge-toolchain.sh
 #
-# author: Copyright (C) 2016-2022 Freddie Chopin https://freddiechopin.info https://distortec.com
+# author: Copyright (C) 2016-2024 Freddie Chopin https://freddiechopin.info https://distortec.com
 #
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not
 # distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -14,18 +14,18 @@ set -eu
 #Remove . from path as it blocks building
 export PATH=${PATH//:.:/:}
 
-binutilsVersion="2.39"
-expatVersion="2.5.0"
-gccVersion="12.2.0"
-gdbVersion="12.1"
-gmpVersion="6.2.1"
-islVersion="0.25"
+binutilsVersion="2.43"
+expatVersion="2.6.3"
+gccVersion="14.2.0"
+gdbVersion="15.2"
+gmpVersion="6.3.0"
+islVersion="0.27"
 libiconvVersion="1.17"
-mpcVersion="1.2.1"
-mpfrVersion="4.1.1"
-newlibVersion="4.2.0.20211231"
-pythonVersion="2.7.18"
-zlibVersion="1.2.13"
+mpcVersion="1.3.1"
+mpfrVersion="4.2.1"
+newlibVersion="4.4.0.20231231"
+pythonVersion="3.12.7"
+zlibVersion="1.3.1"
 
 top="$(pwd)"
 buildNative="buildNative"
@@ -58,10 +58,10 @@ mpfr="mpfr-${mpfrVersion}"
 mpfrArchive="${mpfr}.tar.xz"
 newlib="newlib-${newlibVersion}"
 newlibArchive="${newlib}.tar.gz"
-pythonWin32="python-${pythonVersion}"
-pythonArchiveWin32="${pythonWin32}.msi"
-pythonWin64="python-${pythonVersion}.amd64"
-pythonArchiveWin64="${pythonWin64}.msi"
+pythonWin32="python-${pythonVersion}-win32"
+pythonArchiveWin32="${pythonWin32}.nupkg"
+pythonWin64="python-${pythonVersion}-win64"
+pythonArchiveWin64="${pythonWin64}.nupkg"
 zlib="zlib-${zlibVersion}"
 zlibArchive="${zlib}.tar.gz"
 
@@ -508,14 +508,10 @@ buildNewlib() {
 		messageB "${newlib}${suffix} make install"
 		make install
 		for documentation in ${documentations}; do
-			cd "${target}/newlib/libc"
-			messageB "${newlib}${suffix} libc make install-${documentation}"
+			cd "${target}/newlib"
+			messageB "${newlib}${suffix} make install-${documentation}"
 			make "install-${documentation}"
-			cd ../../..
-			cd "${target}/newlib/libm"
-			messageB "${newlib}${suffix} libm make install-${documentation}"
-			make "install-${documentation}"
-			cd ../../..
+			cd ../..
 		done
 		touch "${tagFileBase}_built"
 		cd "${top}"
@@ -660,8 +656,7 @@ buildGdb() {
 			--with-system-zlib \
 			--with-expat=yes \
 			--with-libexpat-prefix=\"${top}/${buildFolder}/${prerequisites}/${expat}\" \
-			--with-mpfr=yes \
-			--with-libmpfr-prefix=\"${top}/${buildFolder}/${prerequisites}/${mpfr}\" \
+			--with-mpfr=\"${top}/${buildFolder}/${prerequisites}/${mpfr}\" \
 			--with-gdb-datadir=\"'\\\${prefix}'/${target}/share/gdb\" \
 			--with-pkgversion=\"${pkgversion}\""
 		messageB "${bannerPrefix}${gdb} make"
@@ -791,10 +786,10 @@ download "${mpcArchive}" "${gnuMirror}/mpc/${mpcArchive}"
 download "${mpfrArchive}" "${gnuMirror}/mpfr/${mpfrArchive}"
 download "${newlibArchive}" "https://sourceware.org/pub/newlib/${newlibArchive}"
 if [ "${enableWin32}" = "y" ]; then
-	download "${pythonArchiveWin32}" "https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin32}"
+	download "${pythonArchiveWin32}" "https://www.nuget.org/api/v2/package/pythonx86/${pythonVersion}"
 fi
 if [ "${enableWin64}" = "y" ]; then
-	download "${pythonArchiveWin64}" "https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin64}"
+	download "${pythonArchiveWin64}" "https://www.nuget.org/api/v2/package/python/${pythonVersion}"
 fi
 download "${zlibArchive}" "https://www.zlib.net/fossils/${zlibArchive}"
 cd "${top}"
@@ -819,97 +814,6 @@ if [ ! -f "${gcc}_patched" ]; then
 fi
 if [ "${skipGdb}" = "n" ]; then
 	extract "${gdbArchive}"
-
-	if [ ! -f "${gdb}_patched" ]; then
-		messageB "Patching ${gdb}"
-		pushd "${gdb}"
-patch -p1 << 'EOF'
-From 7bd836d5d90353a2de192fd4711a20b4520246b7 Mon Sep 17 00:00:00 2001
-From: Simon Marchi <simon.marchi@polymtl.ca>
-Date: Tue, 10 Jan 2023 00:07:25 -0500
-Subject: [PATCH] gdb/doc: fix install-html with Texinfo 7
-
-Starting with Texinfo 7 (this commit [1]), the output directory for the
-HTML doc format is gdb/doc/gdb_html, rather than gdb/doc/gdb previously.
-This breaks the install-html target, which expects the HTML doc to be in
-gdb/doc/gdb:
-
-    $ make install-html MAKEINFO=makeinfo DESTDIR=/tmp/install
-    make[1]: Entering directory '/home/simark/build/binutils-gdb/gdb'
-    make[2]: Entering directory '/home/simark/build/binutils-gdb/gdb/doc'
-    makeinfo  -DHAVE_MAKEINFO_CLICK --html  -I /home/simark/src/binutils-gdb/gdb/doc/../../readline/readline/doc -I /home/simark/src/binutils-gdb/gdb/doc/../mi -I /home/simark/src/binutils-gdb/gdb/doc /home/simark/src/binutils-gdb/gdb/doc/gdb.texinfo
-    makeinfo  -DHAVE_MAKEINFO_CLICK --html  -I /home/simark/src/binutils-gdb/gdb/doc /home/simark/src/binutils-gdb/gdb/doc/stabs.texinfo
-    makeinfo  -DHAVE_MAKEINFO_CLICK --html  -I /home/simark/src/binutils-gdb/gdb/doc /home/simark/src/binutils-gdb/gdb/doc/annotate.texinfo
-    test -z "/usr/local/share/doc/gdb" || /bin/sh /home/simark/src/binutils-gdb/gdb/doc/../../mkinstalldirs "/tmp/install/usr/local/share/doc/gdb"
-     /usr/bin/install -c -m 644 '/home/simark/src/binutils-gdb/gdb/doc/gdb' '/tmp/install/usr/local/share/doc/gdb/gdb'
-    /usr/bin/install: cannot stat '/home/simark/src/binutils-gdb/gdb/doc/gdb': No such file or directory
-     /usr/bin/install -c -m 644 '/home/simark/src/binutils-gdb/gdb/doc/stabs' '/tmp/install/usr/local/share/doc/gdb/stabs'
-    /usr/bin/install: cannot stat '/home/simark/src/binutils-gdb/gdb/doc/stabs': No such file or directory
-     /usr/bin/install -c -m 644 '/home/simark/src/binutils-gdb/gdb/doc/annotate' '/tmp/install/usr/local/share/doc/gdb/annotate'
-    /usr/bin/install: cannot stat '/home/simark/src/binutils-gdb/gdb/doc/annotate': No such file or directory
-    make[2]: *** [Makefile:278: install-html] Error 1
-    make[2]: Leaving directory '/home/simark/build/binutils-gdb/gdb/doc'
-    make[1]: *** [Makefile:2240: subdir_do] Error 1
-    make[1]: Leaving directory '/home/simark/build/binutils-gdb/gdb'
-    make: *** [Makefile:2006: install-html] Error 2
-
-Fix this by adding -o switches to the HTML targets, to force the output
-directories.
-
-[1] https://git.savannah.gnu.org/cgit/texinfo.git/commit/?id=a868421baf9c44227c43490687f8d6b8d6c95414
-
-Change-Id: Ie147dc7b4a52eb2348005b8dc006a41b0784621f
----
- gdb/doc/Makefile.in | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/gdb/doc/Makefile.in b/gdb/doc/Makefile.in
-index d1012bee98c..5d40aa229b2 100644
---- a/gdb/doc/Makefile.in
-+++ b/gdb/doc/Makefile.in
-@@ -564,7 +564,10 @@ gdb.mm: $(GDB_DOC_FILES) links2roff
- # GDB MANUAL: HTML file
-
- gdb/index.html: ${GDB_DOC_FILES}
--	$(MAKEHTML) $(MAKEHTMLFLAGS) $(READLINE_TEXI_INCFLAG) -I ${GDBMI_DIR} -I $(srcdir) $(srcdir)/gdb.texinfo
-+	$(MAKEHTML) $(MAKEHTMLFLAGS) \
-+		-o gdb \
-+		$(READLINE_TEXI_INCFLAG) -I ${GDBMI_DIR} -I $(srcdir) \
-+		$(srcdir)/gdb.texinfo
-
- stabs.info: $(STABS_DOC_FILES)
- 	$(MAKEINFO_CMD) -I $(srcdir) -o stabs.info $(srcdir)/stabs.texinfo
-@@ -572,7 +575,10 @@ stabs.info: $(STABS_DOC_FILES)
- # STABS DOCUMENTATION: HTML file
-
- stabs/index.html: $(STABS_DOC_FILES)
--	$(MAKEHTML) $(MAKEHTMLFLAGS) -I $(srcdir) $(srcdir)/stabs.texinfo
-+	$(MAKEHTML) $(MAKEHTMLFLAGS) \
-+		-o stabs \
-+		-I $(srcdir) \
-+		$(srcdir)/stabs.texinfo
-
- # Clean these up before each run.  Avoids a catch 22 with not being
- # able to re-generate these files (to fix a corruption) because these
-@@ -614,7 +620,10 @@ annotate.info: $(ANNOTATE_DOC_FILES)
- 	$(MAKEINFO_CMD) -I $(srcdir) -o annotate.info $(srcdir)/annotate.texinfo
-
- annotate/index.html: $(ANNOTATE_DOC_FILES)
--	$(MAKEHTML) $(MAKEHTMLFLAGS) -I $(srcdir) $(srcdir)/annotate.texinfo
-+	$(MAKEHTML) $(MAKEHTMLFLAGS) \
-+		-o annotate \
-+		-I $(srcdir) \
-+		$(srcdir)/annotate.texinfo
-
- # Man pages
- gdb.1: $(GDB_DOC_FILES)
---
-2.34.5
-EOF
-		popd
-		touch "${gdb}_patched"
-	fi
-
 fi
 extract "${gmpArchive}"
 extract "${islArchive}"
@@ -1154,13 +1058,13 @@ buildMingw() {
 	while [ "\${#}" -gt 0 ]; do
 		case "\${1}" in
 			--prefix|--exec-prefix)
-				echo "${top}/${sources}/${pythonFolder}"
+				echo "${top}/${sources}/${pythonFolder}/tools"
 				;;
 			--includes)
-				echo "-D_hypot=hypot -I${top}/${sources}/${pythonFolder}"
+				echo "-D_hypot=hypot -I${top}/${sources}/${pythonFolder}/tools/include"
 				;;
 			--ldflags)
-				echo "-L${top}/${sources}/${pythonFolder} -lpython$(echo "${pythonVersion}" | sed -n 's/^\([^.]\{1,\}\)\.\([^.]\{1,\}\).*$/\1\2/p')"
+				echo "-L${top}/${sources}/${pythonFolder}/tools -lpython$(echo "${pythonVersion}" | sed -n 's/^\([^.]\{1,\}\)\.\([^.]\{1,\}\).*$/\1\2/p')"
 				;;
 		esac
 		shift
@@ -1177,7 +1081,7 @@ buildMingw() {
 				--with-python=\"${top}/${buildFolder}/python.sh\" \
 				--program-prefix=\"${target}-\" \
 				--program-suffix=-py \
-				--with-libgmp-prefix=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
+				--with-gmp=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
 				--with-libiconv-prefix=\"${top}/${buildFolder}/${prerequisites}/${libiconv}\"" \
 			""
 		if [ "${keepBuildFolders}" = "y" ]; then
@@ -1190,7 +1094,7 @@ buildMingw() {
 			"${bannerPrefix}" \
 			"--build=\"${hostTriplet}\" --host=\"${triplet}\" \
 				--with-python=no \
-				--with-libgmp-prefix=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
+				--with-gmp=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
 				--with-libiconv-prefix=\"${top}/${buildFolder}/${prerequisites}/${libiconv}\"" \
 			""
 	fi

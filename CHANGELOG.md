@@ -3,13 +3,76 @@ Change Log
 
 All notable changes to this project will be documented in this file.
 
-[Unreleased](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/221119...HEAD)
---------------------------------------------------------------------------------------------
+[241006](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/240616...241006)
+------------------------------------------------------------------------------------------
+
+### Changed
+
+- Updated gcc to version 14.2.0.
+- Updated binutils to version 2.43.
+- Updated gdb to version 15.2.
+- Updated python to version 3.12.7.
+- Updated expat to version 2.6.3.
+- Updated isl to version 0.27.
+
+[240616](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/240530...240616)
+------------------------------------------------------------------------------------------
+
+### Changed
+
+- Updated gcc to version 14.1.0.
+- Updated python to version 3.12.4.
+
+[240530](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/240410...240530)
+------------------------------------------------------------------------------------------
+
+### Changed
+
+- Updated gcc to version 13.3.0.
+- Updated python to version 3.12.3.
+
+[240410](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/240409...240410)
+------------------------------------------------------------------------------------------
+
+### Changed
+
+- Updated gcc to version 13.2.0.
+
+[240409](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/240408...240409)
+------------------------------------------------------------------------------------------
+
+### Changed
+
+- Updated gcc to version 13.1.0.
+
+[240408](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/221119...240408)
+------------------------------------------------------------------------------------------
+
+### Added
+
+- Added build test of complete toolchain (Linux only) using GitHub Actions.
+
+### Changed
+
+- Updated gcc to version 12.3.0.
+- Updated newlib to version 4.4.0.20231231.
+- Updated binutils to version 2.42.
+- Updated gdb to version 14.2.
+- Updated expat to version 2.6.2.
+- Updated gmp to version 6.3.0.
+- Updated isl to version 0.26.
+- Updated mpc to version 1.3.1.
+- Updated mpfr to version 4.2.1.
+- Updated python to version 3.12.2.
+- Updated zlib to version 1.3.1.
 
 ### Fixed
 
-- Added temporary fix for building GDB 12.1 documentation with Texinfo 7
-([upstream patch](https://git.sr.ht/~sourceware/binutils-gdb/commit/7bd836d5d90353a2de192fd4711a20b4520246b7)).
+- Fixed documentation generation for newlib.
+- New versions of GDB finally use Python 3 for Windows, so fix the build by using packaged Python from NuGet.
+- Fixed build of GDB by using proper arguments for gmp and mpfr.
+- Fixed Windows build of GCC with recent MinGW toolchains
+([upstream patch](https://gcc.gnu.org/pipermail/gcc-patches/2023-January/609514.html)).
 
 [221119](https://github.com/FreddieChopin/bleeding-edge-toolchain/compare/221106...221119)
 ------------------------------------------------------------------------------------------
