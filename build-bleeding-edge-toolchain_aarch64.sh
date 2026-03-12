@@ -4,7 +4,7 @@
 #
 # file: build-bleeding-edge-toolchain.sh
 #
-# author: Copyright (C) 2016-2022 Freddie Chopin https://freddiechopin.info https://distortec.com
+# author: Copyright (C) 2016-2024 Freddie Chopin https://freddiechopin.info https://distortec.com
 #
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not
 # distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -59,10 +59,10 @@ mpfr="mpfr-${mpfrVersion}"
 mpfrArchive="${mpfr}.tar.xz"
 newlib="newlib-${newlibVersion}"
 newlibArchive="${newlib}.tar.gz"
-pythonWin32="python-${pythonVersion}"
-pythonArchiveWin32="${pythonWin32}.msi"
-pythonWin64="python-${pythonVersion}.amd64"
-pythonArchiveWin64="${pythonWin64}.msi"
+pythonWin32="python-${pythonVersion}-win32"
+pythonArchiveWin32="${pythonWin32}.nupkg"
+pythonWin64="python-${pythonVersion}-win64"
+pythonArchiveWin64="${pythonWin64}.nupkg"
 zlib="zlib-${zlibVersion}"
 zlibArchive="${zlib}.tar.gz"
 
@@ -508,14 +508,10 @@ buildNewlib() {
 		messageB "${newlib}${suffix} make install"
 		make install
 		for documentation in ${documentations}; do
-			cd "${target}/newlib/libc"
-			messageB "${newlib}${suffix} libc make install-${documentation}"
+			cd "${target}/newlib"
+			messageB "${newlib}${suffix} make install-${documentation}"
 			make "install-${documentation}"
-			cd ../../..
-			cd "${target}/newlib/libm"
-			messageB "${newlib}${suffix} libm make install-${documentation}"
-			make "install-${documentation}"
-			cd ../../..
+			cd ../..
 		done
 		touch "${tagFileBase}_built"
 		cd "${top}"
@@ -659,8 +655,7 @@ buildGdb() {
 			--with-system-zlib \
 			--with-expat=yes \
 			--with-libexpat-prefix=\"${top}/${buildFolder}/${prerequisites}/${expat}\" \
-			--with-mpfr=yes \
-			--with-libmpfr-prefix=\"${top}/${buildFolder}/${prerequisites}/${mpfr}\" \
+			--with-mpfr=\"${top}/${buildFolder}/${prerequisites}/${mpfr}\" \
 			--with-gdb-datadir=\"'\\\${prefix}'/${target}/share/gdb\" \
 			--with-pkgversion=\"${pkgversion}\""
 		messageB "${bannerPrefix}${gdb} make"
@@ -790,10 +785,10 @@ download "${mpcArchive}" "${gnuMirror}/mpc/${mpcArchive}"
 download "${mpfrArchive}" "${gnuMirror}/mpfr/${mpfrArchive}"
 download "${newlibArchive}" "https://sourceware.org/pub/newlib/${newlibArchive}"
 if [ "${enableWin32}" = "y" ]; then
-	download "${pythonArchiveWin32}" "https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin32}"
+	download "${pythonArchiveWin32}" "https://www.nuget.org/api/v2/package/pythonx86/${pythonVersion}"
 fi
 if [ "${enableWin64}" = "y" ]; then
-	download "${pythonArchiveWin64}" "https://www.python.org/ftp/python/${pythonVersion}/${pythonArchiveWin64}"
+	download "${pythonArchiveWin64}" "https://www.nuget.org/api/v2/package/python/${pythonVersion}"
 fi
 download "${zlibArchive}" "https://www.zlib.net/fossils/${zlibArchive}"
 cd "${top}"
@@ -1139,13 +1134,13 @@ buildMingw() {
 	while [ "\${#}" -gt 0 ]; do
 		case "\${1}" in
 			--prefix|--exec-prefix)
-				echo "${top}/${sources}/${pythonFolder}"
+				echo "${top}/${sources}/${pythonFolder}/tools"
 				;;
 			--includes)
-				echo "-D_hypot=hypot -I${top}/${sources}/${pythonFolder}"
+				echo "-D_hypot=hypot -I${top}/${sources}/${pythonFolder}/tools/include"
 				;;
 			--ldflags)
-				echo "-L${top}/${sources}/${pythonFolder} -lpython$(echo "${pythonVersion}" | sed -n 's/^\([^.]\{1,\}\)\.\([^.]\{1,\}\).*$/\1\2/p')"
+				echo "-L${top}/${sources}/${pythonFolder}/tools -lpython$(echo "${pythonVersion}" | sed -n 's/^\([^.]\{1,\}\)\.\([^.]\{1,\}\).*$/\1\2/p')"
 				;;
 		esac
 		shift
@@ -1162,7 +1157,7 @@ buildMingw() {
 				--with-python=\"${top}/${buildFolder}/python.sh\" \
 				--program-prefix=\"${target}-\" \
 				--program-suffix=-py \
-				--with-libgmp-prefix=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
+				--with-gmp=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
 				--with-libiconv-prefix=\"${top}/${buildFolder}/${prerequisites}/${libiconv}\"" \
 			""
 		if [ "${keepBuildFolders}" = "y" ]; then
@@ -1175,7 +1170,7 @@ buildMingw() {
 			"${bannerPrefix}" \
 			"--build=\"${hostTriplet}\" --host=\"${triplet}\" \
 				--with-python=no \
-				--with-libgmp-prefix=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
+				--with-gmp=\"${top}/${buildFolder}/${prerequisites}/${gmp}\" \
 				--with-libiconv-prefix=\"${top}/${buildFolder}/${prerequisites}/${libiconv}\"" \
 			""
 	fi
@@ -1205,7 +1200,7 @@ buildMingw() {
 		maybeDelete "${package}"
 		ln -s "${installFolder}" "${package}"
 		maybeDelete "${packageArchive}"
-		7z a -mx=9 "${packageArchive}" "${package}"
+		7z a  -mx=9 "${packageArchive}" "${package}"
 		maybeDelete "${package}"
 		touch "${tagFile}"
 	fi
