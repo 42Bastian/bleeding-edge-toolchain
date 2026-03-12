@@ -15,18 +15,18 @@ set -eu
 #Remove . from path as it blocks building
 export PATH=${PATH//:.:/:}
 
-binutilsVersion="2.39"
-expatVersion="2.5.0"
-gccVersion="12.2.0"
-gdbVersion="12.1"
-gmpVersion="6.2.1"
-islVersion="0.25"
+binutilsVersion="2.43"
+expatVersion="2.6.3"
+gccVersion="14.3.0"
+gdbVersion="15.2"
+gmpVersion="6.3.0"
+islVersion="0.27"
 libiconvVersion="1.17"
-mpcVersion="1.2.1"
-mpfrVersion="4.1.1"
-newlibVersion="4.2.0.20211231"
-pythonVersion="2.7.18"
-zlibVersion="1.2.13"
+mpcVersion="1.3.1"
+mpfrVersion="4.2.1"
+newlibVersion="4.4.0.20231231"
+pythonVersion="3.12.7"
+zlibVersion="1.3.1"
 
 top="$(pwd)"
 buildNative="buildNative"
@@ -92,7 +92,7 @@ else
 	nproc="$(nproc)"
 	hostSystem="$(uname -mo)"
 fi
-
+echo $GCC_FLAGS
 enableWin32="n"
 enableWin64="y"
 keepBuildFolders="n"
@@ -914,12 +914,12 @@ extract "${mpfrArchive}"
 extract "${newlibArchive}"
 if [ ! -f "${pythonArchiveWin32}_extracted" ] && [ "${enableWin32}" = "y" ]; then
 	messageB "Extracting ${pythonArchiveWin32}"
-	7za x "${pythonArchiveWin32}" "-o${pythonWin32}"
+	7z x "${pythonArchiveWin32}" "-o${pythonWin32}"
 	touch "${pythonArchiveWin32}_extracted"
 fi
 if [ ! -f "${pythonArchiveWin64}_extracted" ] && [ "${enableWin64}" = "y" ]; then
 	messageB "Extracting ${pythonArchiveWin64}"
-	7za x "${pythonArchiveWin64}" "-o${pythonWin64}"
+	7z x "${pythonArchiveWin64}" "-o${pythonWin64}"
 	touch "${pythonArchiveWin64}_extracted"
 fi
 extract "${zlibArchive}"
@@ -1205,7 +1205,7 @@ buildMingw() {
 		maybeDelete "${package}"
 		ln -s "${installFolder}" "${package}"
 		maybeDelete "${packageArchive}"
-		7za a -l -mx=9 "${packageArchive}" "${package}"
+		7z a -mx=9 "${packageArchive}" "${package}"
 		maybeDelete "${package}"
 		touch "${tagFile}"
 	fi
